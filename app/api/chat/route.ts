@@ -73,6 +73,7 @@ export async function POST(request: Request) {
       { role: "user", content: prompt },
     ],
     temperature: 0.2,
+    max_tokens: 650,
   });
 
   const answer = completion.choices[0]?.message.content?.trim() ?? "";
@@ -94,4 +95,3 @@ export async function POST(request: Request) {
     retrieved: verses,
   });
 }
-

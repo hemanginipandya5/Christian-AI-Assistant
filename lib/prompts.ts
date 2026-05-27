@@ -40,6 +40,7 @@ export function buildGroundedPrompt({
   const context = verses
     .map((verse) => `[${verse.reference}] ${verse.text}`)
     .join("\n");
+  const allowedCitations = verses.map((verse) => verse.reference).join(", ");
 
   const conversation = memory
     .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
@@ -54,11 +55,15 @@ ${conversation || "No prior conversation."}
 Retrieved scripture context:
 ${context || "No scripture context was retrieved."}
 
+Allowed Bible citations:
+${allowedCitations || "None"}
+
 User question:
 ${message}
 
 Instructions for this answer:
-- Use only the retrieved scripture context for Bible citations.
+- Use only the exact references listed under "Allowed Bible citations".
+- Do not cite any Bible reference that is not in the allowed citation list.
 - If a requested citation cannot be verified, say so.
 - Keep the answer concise, pastoral, and careful.
 `;

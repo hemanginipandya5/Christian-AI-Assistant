@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "embed:bible": "tsx scripts/embedBible.ts"
+    "embed:bible": "tsx scripts/embedBible.ts",
+    "eval": "tsx scripts/runEvaluation.ts"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",

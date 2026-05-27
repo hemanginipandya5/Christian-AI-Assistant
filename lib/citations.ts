@@ -35,6 +35,24 @@ const aliases: Record<string, string> = {
   canticles: "songofsongs",
 };
 
+const bookNames = Array.from(
+  new Set([
+    ...verses.map((verse) => verse.book),
+    ...verses.map((verse) => displayBookName(verse.book)),
+    "Psalm",
+    "Psalms",
+    "Song of Solomon",
+    "Song of Songs",
+    "Canticles",
+  ]),
+).sort((a, b) => b.length - a.length);
+
+const bookPattern = bookNames
+  .map((book) => book.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"))
+  .join("|");
+
+const referencePattern = new RegExp(`\\b(${bookPattern})\\s+(\\d{1,3}):(\\d{1,3})\\b`, "gi");
+
 function normalizeBookName(book: string) {
   const compact = book.toLowerCase().replace(/[^a-z0-9]/g, "");
   return aliases[compact] ?? compact;
@@ -60,7 +78,8 @@ export function findVerse(book: string, chapter: number, verse: number) {
 }
 
 export function parseReference(input: string) {
-  const match = input.match(/\b([1-3]?\s?[A-Za-z]+(?:\s[A-Za-z]+)*)\s+(\d{1,3}):(\d{1,3})\b/);
+  referencePattern.lastIndex = 0;
+  const match = referencePattern.exec(input);
 
   if (!match) {
     return null;
@@ -91,9 +110,12 @@ export function validateRequestedReference(input: string) {
 }
 
 export function extractCitations(answer: string) {
-  return Array.from(answer.matchAll(/\b([1-3]?\s?[A-Za-z]+(?:\s[A-Za-z]+)*)\s+(\d{1,3}):(\d{1,3})\b/g)).map(
-    (match) => `${match[1].replace(/\s+/g, " ").trim()} ${match[2]}:${match[3]}`,
-  );
+  referencePattern.lastIndex = 0;
+
+  return Array.from(answer.matchAll(referencePattern)).map((match) => {
+    const verse = findVerse(match[1], Number(match[2]), Number(match[3]));
+    return verse ? formatReference(verse) : `${match[1].replace(/\s+/g, " ").trim()} ${match[2]}:${match[3]}`;
+  });
 }
 
 export function validateAnswerCitations(answer: string, allowedReferences: string[]) {
