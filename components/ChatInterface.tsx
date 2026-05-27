@@ -3,12 +3,18 @@
 import { FormEvent, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ImageIcon, Loader2, Send } from "lucide-react";
-import type { ChatMessage, Denomination } from "@/lib/types";
+import type { ChatMessage, Denomination, RetrievedVerse } from "@/lib/types";
 
 type ChatResponse = {
   answer?: string;
   citations?: string[];
+  retrieved?: RetrievedVerse[];
   error?: string;
+};
+
+type UiMessage = ChatMessage & {
+  citations?: string[];
+  retrieved?: RetrievedVerse[];
 };
 
 const denominations: { value: Denomination; label: string }[] = [
@@ -21,7 +27,7 @@ const denominations: { value: Denomination; label: string }[] = [
 export function ChatInterface() {
   const [mode, setMode] = useState<"chat" | "image">("chat");
   const [denomination, setDenomination] = useState<Denomination>("neutral");
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<UiMessage[]>([
     {
       role: "assistant",
       content:
@@ -63,7 +69,15 @@ export function ChatInterface() {
       const data = (await response.json()) as ChatResponse;
       const content = data.answer ?? data.error ?? "I could not complete that request.";
 
-      setMessages((current) => [...current, { role: "assistant", content }]);
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content,
+          citations: data.citations,
+          retrieved: data.retrieved,
+        },
+      ]);
     } catch {
       setMessages((current) => [
         ...current,
@@ -166,6 +180,35 @@ export function ChatInterface() {
                   }`}
                 >
                   <ReactMarkdown>{message.content}</ReactMarkdown>
+                  {message.citations && message.citations.length > 0 ? (
+                    <div className="mt-3 border-t border-ink/10 pt-3">
+                      <p className="text-xs font-semibold uppercase text-ink/60">Citations used</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {message.citations.map((citation) => (
+                          <span
+                            key={citation}
+                            className="rounded border border-brass/40 bg-white px-2 py-1 text-xs text-ink/75"
+                          >
+                            {citation}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {message.retrieved && message.retrieved.length > 0 ? (
+                    <details className="mt-3 border-t border-ink/10 pt-3">
+                      <summary className="cursor-pointer text-xs font-semibold uppercase text-ink/60">
+                        Retrieved scripture
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        {message.retrieved.slice(0, 3).map((verse) => (
+                          <p key={verse.reference} className="text-xs leading-5 text-ink/70">
+                            <span className="font-semibold text-ink">{verse.reference}</span> {verse.text}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -225,4 +268,3 @@ export function ChatInterface() {
     </main>
   );
 }
-

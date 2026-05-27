@@ -38,20 +38,26 @@ async function main() {
   }
 
   const verses = bible as BibleVerse[];
-  const embedded = [];
+  const embedded: EmbeddedVerse[] = [];
+  const batchSize = 100;
 
-  for (const verse of verses) {
-    const reference = formatReference(verse);
+  for (let start = 0; start < verses.length; start += batchSize) {
+    const batch = verses.slice(start, start + batchSize);
     const response = await openai.embeddings.create({
       model: "text-embedding-3-small",
-      input: `${reference} ${verse.text}`,
+      input: batch.map((verse) => `${formatReference(verse)} ${verse.text}`),
     });
 
-    embedded.push({
-      ...verse,
-      reference,
-      embedding: response.data[0].embedding,
+    response.data.forEach((item, index) => {
+      const verse = batch[index];
+      embedded.push({
+        ...verse,
+        reference: formatReference(verse),
+        embedding: item.embedding,
+      });
     });
+
+    console.log(`Embedded ${Math.min(start + batch.length, verses.length)} / ${verses.length}`);
   }
 
   const output = path.join(process.cwd(), "data", "bible-embeddings.json");

@@ -25,7 +25,7 @@ function lexicalSearch(query: string, limit: number): RetrievedVerse[] {
 
   return verses
     .map((verse) => {
-      const verseTerms = tokenize(`${verse.book} ${verse.text}`);
+      const verseTerms = tokenize(`${formatReference(verse)} ${verse.text}`);
       const overlap = verseTerms.filter((term) => queryTerms.has(term)).length;
       const phraseBonus = verse.text.toLowerCase().includes(query.toLowerCase()) ? 2 : 0;
 
@@ -64,54 +64,7 @@ async function loadEmbeddedIndex(): Promise<EmbeddedVerse[] | null> {
   }
 }
 
-async function queryChroma(query: string, limit: number): Promise<RetrievedVerse[] | null> {
-  if (!process.env.CHROMA_URL || !process.env.OPENAI_API_KEY) {
-    return null;
-  }
-
-  try {
-    const [{ ChromaClient }, embedding] = await Promise.all([
-      import("chromadb"),
-      openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: query,
-      }),
-    ]);
-    const client = new ChromaClient({ path: process.env.CHROMA_URL });
-    const collection = await client.getCollection({ name: "bible" });
-    const result = await collection.query({
-      queryEmbeddings: [embedding.data[0].embedding],
-      nResults: limit,
-    });
-
-    const documents = result.documents?.[0] ?? [];
-    const metadatas = result.metadatas?.[0] ?? [];
-    const distances = result.distances?.[0] ?? [];
-
-    return documents.map((text, index) => {
-      const metadata = (metadatas[index] ?? {}) as Partial<BibleVerse> & { reference?: string };
-
-      return {
-        book: String(metadata.book ?? ""),
-        chapter: Number(metadata.chapter ?? 0),
-        verse: Number(metadata.verse ?? 0),
-        text: String(text ?? ""),
-        reference: String(metadata.reference ?? ""),
-        score: 1 - Number(distances[index] ?? 0),
-      };
-    });
-  } catch {
-    return null;
-  }
-}
-
 export async function retrieveScripture(query: string, limit = 5): Promise<RetrievedVerse[]> {
-  const chromaResults = await queryChroma(query, limit);
-
-  if (chromaResults?.length) {
-    return chromaResults;
-  }
-
   const embeddedIndex = await loadEmbeddedIndex();
 
   if (!embeddedIndex || embeddedIndex.length === 0 || !process.env.OPENAI_API_KEY) {

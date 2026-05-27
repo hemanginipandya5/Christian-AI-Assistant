@@ -26,7 +26,7 @@ The app supports two retrieval modes:
 - `scripts/embedBible.ts` generates `data/bible-embeddings.json` with `text-embedding-3-small`.
 - `lib/rag.ts` uses the embedding index when present, and falls back to keyword retrieval for local demos before embeddings are generated.
 
-The assignment mentioned ChromaDB. This implementation supports ChromaDB when `CHROMA_URL` is configured and also writes a local JSON vector index so reviewers can run the app without managing a vector database service. The retrieval boundary is the same in both modes: only retrieved verses are injected into the model prompt.
+The assignment mentioned ChromaDB. This implementation keeps ChromaDB in the embedding script path, but the Next.js API route reads from a local JSON vector index. That avoids bundling Chroma's optional server-side embedding packages into the Next app while preserving the same RAG boundary: only retrieved verses are injected into the model prompt.
 
 ## Moderation
 
@@ -101,9 +101,9 @@ npm run embed:bible
 
 Then open `http://localhost:3000`.
 
-## Important Dataset Note
+## Dataset Note
 
-`data/bible.json` contains a small KJV-style sample dataset so the project is reviewable immediately. For production or a stronger demo, replace it with a complete public-domain Bible JSON in the same shape:
+`data/bible.json` contains the full Bible dataset converted from the provided archive into the flat shape used by the RAG layer:
 
 ```json
 [
@@ -116,7 +116,12 @@ Then open `http://localhost:3000`.
 ]
 ```
 
-After replacing the dataset, run `npm run embed:bible`.
+The included dataset has 35,091 verse records across 73 books. After changing the dataset, run `npm run embed:bible` to regenerate the local vector index.
+
+## More Documentation
+
+- `RUN_PROJECT.md` explains setup, environment variables, and demo commands.
+- `PROJECT_WALKTHROUGH.md` explains the architecture, design decisions, edge cases, and a 5-8 minute walkthrough script.
 
 ## Evaluation
 

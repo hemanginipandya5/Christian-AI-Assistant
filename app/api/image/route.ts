@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { moderateText } from "@/lib/moderation";
+import { moderateImagePrompt } from "@/lib/moderation";
 import { openai } from "@/lib/openai";
 
 export const runtime = "nodejs";
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
   }
 
-  const moderation = moderateText(prompt);
+  const moderation = moderateImagePrompt(prompt);
   if (!moderation.allowed) {
     return NextResponse.json({
       error: moderation.reason,
@@ -51,4 +51,3 @@ export async function POST(request: Request) {
     imageUrl: `data:image/png;base64,${b64}`,
   });
 }
-
